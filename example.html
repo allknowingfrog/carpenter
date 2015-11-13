@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+    <title>Smart Table</title>
+    <meta charset='utf-8'>
+    <style>
+        table {
+            width: 100%;
+        }
+        td {
+            border: 1px solid black;
+        }
+    </style>
+    <script src='http://code.jquery.com/jquery-2.1.4.min.js'></script>
+    <script src='smarttable.js'></script>
+    <script>
+        $(document).ready(function() {
+            var table = $('table');
+            var st = new smartTable();
+            table.find('td').on('click', function() {
+                st.merge($(this), 'right');
+            });
+        });
+    </script>
+</head>
+<body>
+<table>
+    <colgroup>
+        <col data-smart-table-width=50 style='width:50%;'>
+        <col data-smart-table-width=50 style='width:50%;'>
+    </colgroup>
+    <tbody>
+        <tr>
+            <td>stuff</td>
+            <td>other stuff</td>
+        </tr>
+        <tr>
+            <td>more stuff</td>
+            <td>lots of stuff</td>
+        </tr>
+    </tbody>
+</body>
+</html>
