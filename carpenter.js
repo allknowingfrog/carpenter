@@ -123,36 +123,24 @@ function carpenter() {
         return cellMap;
     }
 
-    //log out cellMap (print cell ids in rows and columns)
-    function debugMap(cellMap) {
-        var nextID = 1;
-
-        var table = cellMap[0][0].closest('table');
-
-        table.find('> tbody > tr > td').each(function() {
-            setId($(this), nextID);
-            nextID++;
-        });
-
-        var map = [];
-        var visited = [];
-        var row, cell;
-        for(var r=0; r<cellMap.length; r++) {
-            row = cellMap[r];
-            map.push(new Array(row.length));
-            for(var c=0; c<row.length; c++) {
-                cell = row[c];
-                if(visited.indexOf(cell) == -1) visited.push(cell);
-                map[r][c] = getId(cell);
-            }
-        }
-        console.log(JSON.stringify(map).replace(/\],\[/g, "\n").replace("[[", "").replace("]]", ""));
-    }
-
-    function getColumn(cell) {
+    function column(cell) {
         var cellMap = map(cell);
 
         return cell.closest('table').find('> colgroup > col').eq(getCol(cell));
+    }
+
+    function bottomLeftNeighbor(cell, rIndex, cIndex) {
+        var rows = cell.closest('table').find('> tbody > tr');
+
+        var nRow = rows.eq(rIndex);
+        var neighbor;
+        //find the last cell left of this one in the next row down
+        nRow.find('> td').each(function() {
+            if(getCol($(this)) < cIndex) neighbor = $(this);
+            else return false;
+        });
+
+        return neighbor;
     }
 
     //LAYOUT FUNCTIONS
@@ -233,21 +221,6 @@ function carpenter() {
         }
     }
 
-    function bottomLeftNeighbor(cell, rIndex, cIndex) {
-        var rows = cell.closest('table').find('> tbody > tr');
-
-        var nRow = rows.eq(rIndex);
-        var neighbor;
-        //find the last cell left of this one in the next row down
-        nRow.find('> td').each(function() {
-            if(getCol($(this)) < cIndex) neighbor = $(this);
-            else return false;
-        });
-
-        return neighbor;
-    }
-
-    //split cell by decreasing colspan/rowspan and appending new cell
     function split(cell, horizontal, inverted) {
         var cellMap = map(cell);
 
@@ -468,12 +441,12 @@ function carpenter() {
     };
 
     this.expandLeft = function(cell, increment) {
-        expand(getColumn(cell), false, increment);
-    }
+        expand(column(cell), false, increment);
+    };
 
     this.expandRight = function(cell, increment) {
-        expand(getColumn(cell), true, increment);
-    }
+        expand(column(cell), true, increment);
+    };
 
     this.splitRow = function(cell, dir) {
         var cellMap = map(cell);
@@ -491,7 +464,7 @@ function carpenter() {
         for(var i in visited) {
             split(cell, dir, visited[i]);
         }
-    }
+    };
 
     this.removeRow = function(cell) {
         var cellMap = map(cell);
@@ -521,5 +494,34 @@ function carpenter() {
         for(var c=columns.length-1; c>0; c--) {
             collapseColumn(cellMap, c, -1);
         }
-    }
+    };
+
+    this.debug = function(cell) {
+        var cellMap = map(cell);
+
+        var nextID = 1;
+
+        var table = cellMap[0][0].closest('table');
+
+        table.find('> tbody > tr > td').each(function() {
+            setId($(this), nextID);
+            nextID++;
+        });
+
+        var debugMap = [];
+        var visited = [];
+        var row, cell;
+        for(var r=0; r<cellMap.length; r++) {
+            row = cellMap[r];
+            debugMap.push(new Array(row.length));
+            for(var c=0; c<row.length; c++) {
+                cell = row[c];
+                if(visited.indexOf(cell) == -1) visited.push(cell);
+                debugMap[r][c] = getId(cell);
+            }
+        }
+        console.log(
+            JSON.stringify(debugMap).replace(/\],\[/g, "\n").replace("[[", "").replace("]]", "")
+        );
+    };
 }
