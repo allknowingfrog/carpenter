@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang='en'>
 <head>
-    <title>Smart Table</title>
+    <title>Carpenter</title>
     <meta charset='utf-8'>
     <style>
         table {
@@ -14,11 +14,11 @@
     <script src='http://code.jquery.com/jquery-2.1.4.min.js'></script>
     <script src='carpenter.js'></script>
     <script>
+        var carp = new carpenter();
         $(document).ready(function() {
             var table = $('table');
-            var st = new smartTable();
             table.find('td').on('click', function() {
-                st.merge($(this), 'right');
+                carp.mergeRight($(this));
             });
         });
     </script>
@@ -26,8 +26,8 @@
 <body>
 <table>
     <colgroup>
-        <col data-smart-table-width=50 style='width:50%;'>
-        <col data-smart-table-width=50 style='width:50%;'>
+        <col data-carpenter-width=50 style='width:50%;'>
+        <col data-carpenter-width=50 style='width:50%;'>
     </colgroup>
     <tbody>
         <tr>

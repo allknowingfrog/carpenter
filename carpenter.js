@@ -1,4 +1,78 @@
-function smartTable() {
+function carpenter() {
+    //DOM ACCESSOR FUNCTIONS
+    function base10(value) {
+        return parseInt(value, 10);
+    }
+
+    function getInt(cell, attribute) {
+        return base10(cell.attr(attribute));
+    }
+
+    function getRow(cell) {
+        return getInt(cell, 'data-carpenter-row');
+    }
+
+    function setRow(cell, value) {
+        cell.attr('data-carpenter-row', value);
+    }
+
+    function getCol(cell) {
+        return getInt(cell, 'data-carpenter-col');
+    }
+
+    function setCol(cell, value) {
+        cell.attr('data-carpenter-col', value);
+    }
+
+    function getId(cell) {
+        return cell.attr('data-carpenter-id');
+    }
+
+    function setId(cell, value) {
+        cell.attr('data-carpenter-id', value);
+    }
+
+    function getColspan(cell) {
+        var colspan = cell.prop('colspan');
+
+        return colspan ? base10(colspan) : 1;
+    }
+
+    function setColspan(cell, value) {
+        cell.prop('colspan', value);
+    }
+
+    function incrementColspan(cell, increment) {
+        setColspan(cell, getColspan(cell) + increment);
+    }
+
+    function getRowspan(cell) {
+        var rowspan = cell.prop('rowspan');
+
+        return rowspan ? base10(rowspan) : 1;
+    }
+
+    function setRowspan(cell, value) {
+        cell.prop('rowspan', value);
+    }
+
+    function incrementRowspan(cell, increment) {
+        setRowspan(cell, getRowspan(cell) + increment);
+    }
+
+    function getWidth(col) {
+        return getInt(col, 'data-carpenter-width');
+    }
+
+    function setWidth(col, value) {
+        col.attr('data-carpenter-width', value);
+        col.css('width', value + '%');
+    }
+
+    function incrementWidth(col, increment) {
+        setWidth(col, getWidth(col) + increment);
+    }
+
     //MAPPING FUNCTIONS
     /* populate a two-dimensional array representing every possible cell in the
      * html table, indexed by row then column; each location contains a jQuery
@@ -30,18 +104,11 @@ function smartTable() {
                     }
                 }
 
-                var colspan = cell.prop('colspan');
-                if(colspan) colspan = parseInt(colspan, 10);
-                else colspan = 1;
-                cell.prop('colspan', colspan);
+                var colspan = getColspan(cell);
+                var rowspan = getRowspan(cell);
 
-                var rowspan = cell.prop('rowspan');
-                if(rowspan) rowspan = parseInt(rowspan, 10);
-                else rowspan = 1;
-                cell.prop('rowspan', rowspan);
-
-                cell.attr('data-smart-table-row', rIndex);
-                cell.attr('data-smart-table-col', cIndex);
+                setRow(cell, rIndex);
+                setCol(cell, cIndex);
 
                 for(var r=0; r<rowspan; r++) {
                     for(var c=0; c<colspan; c++) {
@@ -56,14 +123,14 @@ function smartTable() {
         return cellMap;
     }
 
-    //log out cellMap; print cell ids in rows and columns
+    //log out cellMap (print cell ids in rows and columns)
     function debugMap(cellMap) {
         var nextID = 1;
 
         var table = cellMap[0][0].closest('table');
 
         table.find('> tbody > tr > td').each(function() {
-            $(this).attr('data-smart-table-id', nextID);
+            setId($(this), nextID);
             nextID++;
         });
 
@@ -76,108 +143,31 @@ function smartTable() {
             for(var c=0; c<row.length; c++) {
                 cell = row[c];
                 if(visited.indexOf(cell) == -1) visited.push(cell);
-                map[r][c] = cell.attr('data-smart-table-id');
+                map[r][c] = getId(cell);
             }
         }
         console.log(JSON.stringify(map).replace(/\],\[/g, "\n").replace("[[", "").replace("]]", ""));
     }
 
-    //find every adjacent cell in a given direction
-    function getNeighbors(cell, side, strict) {
-        var cellMap = map(cell);
-
-        var rIndex = parseInt(cell.attr('data-smart-table-row'), 10);
-        var cIndex = parseInt(cell.attr('data-smart-table-col'), 10);
-
-        var rowspan = parseInt(cell.prop('rowspan'), 10);
-        var colspan = parseInt(cell.prop('colspan'), 10);
-
-        var neighbors = $();
-
-        var nIndex, neighbor;
-
-        if(side == 'top' || side == 'bottom') {
-            if(side == 'top') nIndex = rIndex - 1;
-            else nIndex = rIndex + rowspan;
-
-            if(cellMap[nIndex]) {
-                var ncolspan, ncIndex;
-                for(var i=0; i<colspan; i++) {
-                    neighbor = cellMap[nIndex][cIndex+i];
-                    if(neighbor) {
-                        if(strict) {
-                            ncIndex = parseInt(neighbor.attr('data-smart-table-col'), 10);
-                            ncolspan = parseInt(neighbor.prop('colspan'), 10);
-                            if(ncIndex >= cIndex && ncolspan + i <= colspan) neighbors = neighbors.add(neighbor);
-                        } else {
-                            neighbors = neighbors.add(neighbor);
-                        }
-                    }
-                }
-            }
-
-        } else if(side == 'left' || side == 'right') {
-            if(side == 'left') nIndex = cIndex - 1;
-            else nIndex = cIndex + colspan;
-
-            var nrowspan, nrIndex;
-            for(var i=0; i<rowspan; i++) {
-                neighbor = cellMap[rIndex+i][nIndex];
-                if(neighbor) {
-                    if(strict) {
-                        nrIndex = parseInt(neighbor.attr('data-smart-table-row'), 10);
-                        nrowspan = parseInt(neighbor.prop('rowspan'), 10);
-                        if(nrIndex >= rIndex && nrowspan + i <= rowspan) neighbors = neighbors.add(neighbor);
-                    } else {
-                        neighbors = neighbors.add(neighbor);
-                    }
-                }
-            }
-        }
-
-        return neighbors;
-    }
-
-    //COLUMN FUNCTIONS
     function getColumn(cell) {
         var cellMap = map(cell);
 
-        return cell.closest('table').find('> colgroup > col').eq(cell.attr('data-smart-table-col'));
+        return cell.closest('table').find('> colgroup > col').eq(getCol(cell));
     }
 
-    function widthSet(col, width) {
-        col.attr('data-smart-table-width', width);
-        col.css('width', width+'%');
-    }
-
-    function widthInc(col, target, inc) {
-        var twidth = parseInt(target.attr('data-smart-table-width'), 10);
-        twidth -= inc;
+    //LAYOUT FUNCTIONS
+    function expand(col, inverted, increment) {
+        var target = inverted ? col.next('col') : col.prev('col');
+        var twidth = getWidth(target) - increment;
         if(twidth > 0) {
-            var cwidth = parseInt(col.attr('data-smart-table-width'), 10);
-            cwidth += inc;
+            var cwidth = getWidth(col) + increment;
             if(cwidth > 0) {
-                widthSet(target, twidth);
-                widthSet(col, cwidth);
+                setWidth(target, twidth);
+                setWidth(col, cwidth);
             }
         }
     }
 
-    function widthLeft(cell, inc) {
-        var col = getColumn(cell);
-        if(typeof inc != 'number') inc = 1;
-        var target = col.prev('col');
-        widthInc(col, target, inc);
-    }
-
-    function widthRight(cell, inc) {
-        var col = getColumn(cell);
-        if(typeof inc != 'number') inc = 1;
-        var target = col.next('col');
-        widthInc(col, target, inc);
-    }
-
-    //LAYOUT FUNCTIONS
     function expandRow(cellMap, rIndex) {
         var cells = cellMap[rIndex];
         var visited = [];
@@ -186,27 +176,28 @@ function smartTable() {
             testCell = cells[c];
             if(visited.indexOf(testCell) == -1) {
                 visited.push(testCell);
-                testCell.prop('rowspan', parseInt(testCell.prop('rowspan'), 10) + 1);
+                incrementRowspan(testCell, 1);
             }
         }
     }
 
-    function collapseRow(cellMap, rIndex, increment) {
+    function collapseRow(cell, rIndex, increment) {
         if(increment != -1) increment = 1;
 
-        var rows = table.find('> tbody > tr');
+        var cellMap = map(cell);
+        var rows = cell.closest('table').find('> tbody > tr');
 
         var row = rows.eq(rIndex);
         if(row.find('> td').length == 0) {
             row.remove();
             var visited = [];
-            var cells = cellMap[rIndex+increment];
+            var cells = cellMap[rIndex + increment];
             var testCell;
             for(var c=0; c<cells.length; c++) {
                 testCell = cells[c];
                 if(visited.indexOf(testCell) == -1) {
                     visited.push(testCell);
-                    testCell.prop('rowspan', testCell.prop('rowspan') - 1);
+                    incrementRowspan(testCell, -1);
                 }
             }
         }
@@ -218,7 +209,7 @@ function smartTable() {
         var merge = true;
         for(var i in cellMap) {
             var row = cellMap[i];
-            if(row[cIndex] != row[cIndex+increment]) {
+            if(row[cIndex] != row[cIndex + increment]) {
                 merge = false;
                 break;
             }
@@ -228,19 +219,16 @@ function smartTable() {
             var visited = [];
             var testCell;
             for(var i in cellMap) {
-                testCell = cellMap[i][cIndex+increment];
+                testCell = cellMap[i][cIndex + increment];
                 if(visited.indexOf(testCell) == -1) {
                     visited.push(testCell);
-                    testCell.prop('colspan', testCell.prop('colspan') - 1);
+                    incrementColspan(testCell, -1);
                 }
             }
             var columns = table.find('> colgroup > col');
             var col = columns.eq(cIndex);
-            var nCol = columns.eq(cIndex+increment);
-            var width = parseInt(col.attr('data-smart-table-width'), 10) + parseInt(nCol.attr('data-smart-table-width'), 10);
-            col.attr('data-smart-table-width', width);
-            col.css('width', width+'%');
-            col.text(width);
+            var nCol = columns.eq(cIndex + increment);
+            incrementWidth(col, getWidth(nCol));
             nCol.remove();
         }
     }
@@ -252,46 +240,31 @@ function smartTable() {
         var neighbor;
         //find the last cell left of this one in the next row down
         nRow.find('> td').each(function() {
-            if($(this).attr('data-smart-table-col') < cIndex) neighbor = $(this);
+            if(getCol($(this)) < cIndex) neighbor = $(this);
             else return false;
         });
 
         return neighbor;
     }
 
-    //true = horizontal, false = vertical
-    function dirRotation(dir) {
-        if(dir == 'left' || dir == 'right') return true;
-        else return false;
-    }
-
-    //true = positive, false = negative
-    function dirMagnitude(dir) {
-        if(dir == 'down' || dir == 'right') return true;
-        else return false;
-    }
-
     //split cell by decreasing colspan/rowspan and appending new cell
-    function split(cell, dir) {
+    function split(cell, horizontal, inverted) {
         var cellMap = map(cell);
 
-        var rotation = dirRotation(dir);
-        var magnitude = dirMagnitude(dir);
-
-        var rIndex = parseInt(cell.attr('data-smart-table-row'), 10);
-        var cIndex = parseInt(cell.attr('data-smart-table-col'), 10);
+        var rIndex = getRow(cell);
+        var cIndex = getCol(cell);
 
         var rows = cell.closest('table').find('> tbody > tr');
 
         //vertical
-        if(!rotation) {
+        if(!horizontal) {
             //up
-            if(!magnitude) {
-                if(cell.prop('rowspan') == 1) {
+            if(!inverted) {
+                if(getRowspan(cell) == 1) {
                     expandRow(cellMap, rIndex);
                     var newCell = cell.clone(true);
-                    cell.prop('rowspan', 1);
-                    newCell.prop('rowspan', newCell.prop('rowspan') - 1).removeClass('smart-table-active');
+                    setRowspan(cell, 1);
+                    incrementRowspan(newCell, -1);
                     cell.after(newCell);
                     var newRow = $("<TR></TR>").append(cell);
                     newCell.parent().after(newRow);
@@ -299,9 +272,9 @@ function smartTable() {
                     cell = newCell;
                     newCell = tmp;
                 } else {
-                    cell.prop('rowspan', cell.prop('rowspan') - 1);
+                    incrementRowspan(cell, -1);
                     rIndex++;
-                    var newCell = cell.clone(true).prop('rowspan', 1).removeClass('smart-table-active');
+                    var newCell = cell.clone(true).prop('rowspan', 1);
                     if(cIndex > 0) {
                         neighbor = bottomLeftNeighbor(cell, rIndex, cIndex);
                         cell.after(newCell);
@@ -313,16 +286,16 @@ function smartTable() {
                 }
             //down
             } else {
-                if(cell.prop('rowspan') == 1) {
+                if(getRowspan(cell) == 1) {
                     expandRow(cellMap, rIndex);
-                    cell.prop('rowspan', cell.prop('rowspan') - 1);
-                    var newCell = cell.clone(true).prop('rowspan', 1).removeClass('smart-table-active');
+                    incrementRowspan(cell, -1);
+                    var newCell = cell.clone(true).prop('rowspan', 1);
                     var newRow = $("<TR></TR>").append(newCell);
                     rows.eq(rIndex).after(newRow);
                 } else {
-                    cell.prop('rowspan', cell.prop('rowspan') - 1);
-                    rIndex += parseInt(cell.prop('rowspan'), 10);
-                    var newCell = cell.clone(true).prop('rowspan', 1).removeClass('smart-table-active');
+                    incrementRowspan(cell, -1);
+                    rIndex += getRowspan(cell);
+                    var newCell = cell.clone(true).prop('rowspan', 1);
                     if(cIndex > 0) {
                         neighbor = bottomLeftNeighbor(cell, rIndex, cIndex);
                         neighbor.after(newCell);
@@ -334,18 +307,18 @@ function smartTable() {
 
         //horizontal
         } else {
-            if(cell.prop('colspan') == 1) {
+            if(getColspan(cell) == 1) {
                 var columns = cell.closest('table').find('> colgroup > col');
                 var col = columns.eq(cIndex);
-                var width = col.attr('data-smart-table-width');
+                var width = getWidth(col);
                 var left = parseInt(Math.ceil(width/2), 10);
                 col.width(left+'%');
-                col.attr('data-smart-table-width', left);
+                setWidth(col, left);
                 col.text(left);
                 var newCol = col.clone();
                 var right = Math.floor(width/2);
                 newCol.width(right+'%');
-                newCol.attr('data-smart-table-width', right);
+                setWidth(newCol, right);
                 newCol.text(right);
                 col.after(newCol);
 
@@ -355,67 +328,57 @@ function smartTable() {
                     testCell = cellMap[r][cIndex];
                     if(visited.indexOf(testCell) == -1) {
                         visited.push(testCell);
-                        var span = testCell.prop('colspan');
-                        span++;
-                        testCell.prop('colspan', span);
+                        incrementColspan(testCell, 1);
                     }
                 }
             }
 
-            cell.prop('colspan', cell.prop('colspan')-1);
+            incrementColspan(cell, -1);
 
-            var newCell = cell.clone(true).prop('colspan', 1).removeClass('smart-table-active');
+            var newCell = cell.clone(true).prop('colspan', 1);
 
-            //left
-            if(!magnitude) cell.before(newCell);
-            //right
-            else cell.after(newCell);
+            inverted ? cell.after(newCell) : cell.before(newCell);
         }
     }
 
-    function merge(cell, dir) {
+    function merge(cell, horizontal, inverted) {
         var cellMap = map(cell);
 
-        var rotation = dirRotation(dir);
-        var magnitude = dirMagnitude(dir);
-
-        var rIndex = parseInt(cell.attr('data-smart-table-row'), 10);
-        var cIndex = parseInt(cell.attr('data-smart-table-col'), 10);
+        var rIndex = getRow(cell);
+        var cIndex = getCol(cell);
 
         //vertical
-        if(!rotation) {
+        if(!horizontal) {
             //up
-            if(!magnitude) {
+            if(!inverted) {
                 var nIndex = rIndex - 1;
                 if(nIndex >= 0) {
                     var neighbor = cellMap[nIndex][cIndex];
-                    if(neighbor && !neighbor.hasClass('smart-table-layout') && neighbor.prop('colspan') == cell.prop('colspan')) {
-                        if(cIndex == 0 || cellMap[nIndex][cIndex-1] != neighbor) {
-                            cell.prop('rowspan', cell.prop('rowspan') + neighbor.prop('rowspan'));
-                            neighbor.after(cell);
-                            neighbor.remove();
-                        }
+                    if(
+                        neighbor && getColspan(neighbor) == getColspan(cell) &&
+                        (cIndex == 0 || cellMap[nIndex][cIndex-1] != neighbor)
+                    ) {
+                        incrementRowspan(cell, getRowspan(neighbor));
+                        neighbor.after(cell);
+                        neighbor.remove();
                     }
 
-                    cellMap = map(cell);
-
-                    collapseRow(cellMap, rIndex, -1);
+                    collapseRow(cell, rIndex, -1);
                 }
             //down
             } else {
-                var nIndex = rIndex + cell.prop('rowspan');
+                var nIndex = rIndex + getRowspan(cell);
                 if(nIndex < cellMap.length) {
                     var neighbor = cellMap[nIndex][cIndex];
-                    if(neighbor && !neighbor.hasClass('smart-table-layout') && neighbor.prop('colspan') == cell.prop('colspan')) {
-                        if(cIndex == 0 || cellMap[nIndex][cIndex-1] != neighbor) {
-                            cell.prop('rowspan', cell.prop('rowspan') + neighbor.prop('rowspan'));
-                            neighbor.remove();
-                        }
+                    if(
+                        neighbor && getColspan(neighbor) == getColspan(cell) &&
+                        (cIndex == 0 || cellMap[nIndex][cIndex-1] != neighbor)
+                    ) {
+                        incrementRowspan(cell, getRowspan(neighbor));
+                        neighbor.remove();
                     }
 
-                    cellMap = map(cell);
-
-                    collapseRow(cellMap, nIndex, -1);
+                    collapseRow(cell, nIndex, -1);
                 }
             }
 
@@ -426,7 +389,7 @@ function smartTable() {
             var neighbor, nIndex;
 
             //left
-            if(!magnitude) {
+            if(!inverted) {
                 increment = 1;
                 neighbor = cell.prev();
                 nIndex = cIndex - 1;
@@ -435,18 +398,18 @@ function smartTable() {
             } else {
                 increment = -1;
                 neighbor = cell.next();
-                nIndex = parseInt(neighbor.attr('data-smart-table-col'), 10);
+                nIndex = getCol(neighbor);
             }
 
-            if(neighbor && neighbor.prop('rowspan') == cell.prop('rowspan')) {
-                cell.prop('colspan', cell.prop('colspan') + neighbor.prop('colspan'));
+            if(neighbor && getRowspan(neighbor) == getRowspan(cell)) {
+                incrementColspan(cell, getColspan(neighbor));
                 neighbor.remove();
             }
 
             cellMap = map(cell);
             for(var i in cellMap) {
                 var row = cellMap[i];
-                if(row[nIndex] != row[nIndex+increment]) {
+                if(row[nIndex] != row[nIndex + increment]) {
                     merge = false;
                     break;
                 }
@@ -456,26 +419,66 @@ function smartTable() {
                 var visited = [];
                 var testCell;
                 for(var i in cellMap) {
-                    testCell = cellMap[i][nIndex+increment];
+                    testCell = cellMap[i][nIndex + increment];
                     if(visited.indexOf(testCell) == -1) {
                         visited.push(testCell);
-                        testCell.prop('colspan', testCell.prop('colspan') - 1);
+                        incrementColspan(testCell, -1);
                     }
                 }
                 var columns = cell.closest('table').find('> colgroup > col');
-                var col = columns.eq(nIndex+increment);
+                var col = columns.eq(nIndex + increment);
                 var nCol = columns.eq(nIndex);
-                var width = parseInt(col.attr('data-smart-table-width'), 10) + parseInt(nCol.attr('data-smart-table-width'), 10);
-                col.attr('data-smart-table-width', width);
-                col.css('width', width+'%');
-                col.text(width);
+                incrementWidth(col, getWidth(nCol));
                 nCol.remove();
             }
         }
     }
 
-    function splitRow(cell, dir) {
-        var rIndex = parseInt(cell.attr('data-smart-table-row'), 10);
+    //PUBLIC METHODS
+    this.splitUp = function(cell) {
+        split(cell, false, false);
+    };
+
+    this.splitDown = function(cell) {
+        split(cell, false, true);
+    };
+
+    this.splitLeft = function(cell) {
+        split(cell, true, false);
+    };
+
+    this.splitRight = function(cell) {
+        split(cell, true, true);
+    };
+
+    this.mergeUp = function(cell) {
+        merge(cell, false, false);
+    };
+
+    this.mergeDown = function(cell) {
+        merge(cell, false, true);
+    };
+
+    this.mergeLeft = function(cell) {
+        merge(cell, true, false);
+    };
+
+    this.mergeRight = function(cell) {
+        merge(cell, true, true);
+    };
+
+    this.expandLeft = function(cell, increment) {
+        expand(getColumn(cell), false, increment);
+    }
+
+    this.expandRight = function(cell, increment) {
+        expand(getColumn(cell), true, increment);
+    }
+
+    this.splitRow = function(cell, dir) {
+        var cellMap = map(cell);
+
+        var rIndex = getRow(cell);
 
         var visited = [];
         var testCell;
@@ -490,11 +493,11 @@ function smartTable() {
         }
     }
 
-    function removeRow(cell) {
+    this.removeRow = function(cell) {
         var cellMap = map(cell);
 
-        var rIndex = parseInt(cell.attr('data-smart-table-row'), 10);
-        var cIndex = parseInt(cell.attr('data-smart-table-col'), 10);
+        var rIndex = getRow(cell);
+        var cIndex = getCol(cell);
 
         var rows = table.find('> tbody > tr');
 
@@ -506,9 +509,7 @@ function smartTable() {
             testCell = cellMap[rIndex][i];
             if(visited.indexOf(testCell) == -1) {
                 visited.push(testCell);
-                rowspan = parseInt(testCell.prop('rowspan'), 10);
-                if(rowspan <= 1) testCell.remove();
-                else testCell.prop('rowspan', testCell.prop('rowspan') - 1);
+                getRowspan(testCell) <= 1 ? testCell.remove() : incrementRowspan(testCell, -1);
             }
         }
         row.remove();
@@ -521,7 +522,4 @@ function smartTable() {
             collapseColumn(cellMap, c, -1);
         }
     }
-
-    this.split = split;
-    this.merge = merge;
 }
