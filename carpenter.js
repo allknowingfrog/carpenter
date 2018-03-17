@@ -1,4 +1,4 @@
-function carpenter() {
+window.carpenter = new (function carpenter() {
     //DOM ACCESSOR FUNCTIONS
     function base10(value) {
         return parseInt(value, 10);
@@ -524,4 +524,4 @@ function carpenter() {
             JSON.stringify(debugMap).replace(/\],\[/g, "\n").replace("[[", "").replace("]]", "")
         );
     };
-}
+})();
